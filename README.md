@@ -73,7 +73,8 @@ DB.once('Users.update', (id, name) => {
 });
 ```
 
-# Castom types
+# Custom types
+You can determine how to convert a given specific type
 
 114 - code postgres JSON
 3802 - code JSONb
