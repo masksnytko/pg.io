@@ -57,11 +57,10 @@ class PostgresType extends Array {
         if (instance !== undefined) {
             return instance;
         } else {
-            super(4000);
+            super();
             instance = this;
         }
         this._init();
-        this._default();
     }
     _init() {
         this[21] = parseInt; // int2
@@ -120,13 +119,6 @@ class PostgresType extends Array {
         this[2951] = parseStringArray; // uuid[]
         this[1183] = parseStringArray; // time[]
         this[1270] = parseStringArray; // timetz[]        
-    }
-    _default() {
-        for (var i = 0; i < 4000; i++) {
-            if (this[i] === undefined) {
-                this[i] = parsDefault;
-            }
-        }
     }
 }
 
