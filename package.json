@@ -1,0 +1,28 @@
+{
+  "name": "pg.io",
+  "version": "1.0.0",
+  "description": "Speed driver node js for postgres (100 000 request/sec and more), LISTEN, NOTIFY, pool, castom Types, minimal dependencies",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/masksnytko/pg.io.git"
+  },
+  "keywords": [
+    "pg",
+    "events",
+    "pool"
+  ],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/masksnytko/pg.io/issues"
+  },
+  "homepage": "https://github.com/masksnytko/pg.io#readme",
+  "dependencies": {
+    "events.io": "^2.0.3",
+    "queue.o": "^1.0.7"
+  }
+}
