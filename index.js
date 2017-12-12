@@ -292,20 +292,20 @@ class PoolConnection extends Events {
     }
     on(type, cb) {
         super.on(`${type}`, cb);
-        return this.query(`LISTEN ${type}`);
+        return this.query(`LISTEN "${type}"`);
     }
     once(type, cb) {
         super.once(`${type}`, (...arg) => {
-            this.query(`UNLISTEN ${type}`, Ignore);
+            this.query(`UNLISTEN "${type}"`, Ignore);
             cb(...arg);
         });
-        return this.query(`LISTEN ${type}`);
+        return this.query(`LISTEN "${type}"`);
     }
     emit(type, ...arg) {
         if (arg.length === 0) {
-            this.query(`NOTIFY ${type}`, Ignore);
+            this.query(`NOTIFY "${type}"`, Ignore);
         } else {
-            this.query(`NOTIFY ${type}, '${JSON.stringify(arg)}'`, Ignore);
+            this.query(`NOTIFY "${type}", '${JSON.stringify(arg)}'`, Ignore);
         }
     }
     addType(code, cb) {
