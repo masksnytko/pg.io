@@ -28,6 +28,12 @@ const parseIntArray = function(value) {
         .replace('}', ']')
         .replace(/NULL/g, 'null'));
 }
+const parseFloatArray = function(value) {
+    return JSON.parse(value
+        .replace('{', '[')
+        .replace('}', ']')
+        .replace(/NULL/g, 'null'));
+}
 const parseByteArray = function(value) {
     return value;
 }
@@ -41,9 +47,6 @@ const parseCircle = function(value) {
     return value;
 }
 const parsePointArray = function(value) {
-    return value;
-}
-const parseFloatArray = function(value) {
     return value;
 }
 const parseByte = function(value) {
