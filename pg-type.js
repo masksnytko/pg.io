@@ -8,6 +8,29 @@ const parseBool = function(value) {
       value === 'on' ||
       value === '1';
 }
+const parseBoolArray = function(value) {
+    return JSON.parse(value
+        .replace('{', '[')
+        .replace('}', ']')
+        .replace(/TRUE|t|y|yes|on|1]/g, 'true')
+        .replace(/FALSE|f|n|no|off|0]/g, 'false')
+        .replace(/NULL/g, 'null'));
+}
+const parseStringArray = function(value) {
+    return JSON.parse(value
+        .replace('{', '[')
+        .replace('}', ']')
+        .replace(/NULL/g, 'null'));
+}
+const parseIntArray = function(value) {
+    return JSON.parse(value
+        .replace('{', '[')
+        .replace('}', ']')
+        .replace(/NULL/g, 'null'));
+}
+const parseByteArray = function(value) {
+    return value;
+}
 const parseDate = function(value) {
     return value;
 }
@@ -15,18 +38,6 @@ const parsePoint = function(value) {
     return value;
 }
 const parseCircle = function(value) {
-    return value;
-}
-const parseStringArray = function(value) {
-    return value;
-}
-const parseBoolArray = function(value) {
-    return value;
-}
-const parseByteArray = function(value) {
-    return value;
-}
-const parseIntArray = function(value) {
     return value;
 }
 const parsePointArray = function(value) {
@@ -45,9 +56,6 @@ const parseInterval = function(value) {
     return value;
 }
 const parseJsonArray = function(value) {
-    return value;
-}
-const parsDefault = function(value) {
     return value;
 }
 

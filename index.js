@@ -308,7 +308,7 @@ class PoolConnection extends Events {
             this.query(`NOTIFY "${type}", '${JSON.stringify(arg)}'`, Ignore);
         }
     }
-    addType(code, cb) {
+    setType(code, cb) {
         PG_TYPE[code] = cb;
     }
 }
