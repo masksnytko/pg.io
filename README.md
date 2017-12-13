@@ -20,7 +20,7 @@ const DB = new PG({
     max: 6
 });
 ```
-`rowFormat: 'JSON'` if you want the result of a string in JSON  `res = [{...},{...}...])`
+`rowFormat: 'JSON'` if you want the result of a string in JSON  `res = [{...},{...}...]`
 
 `max: 6` The number of simultaneous connections to the database, balancing is based on the Round Robin principle. Specifying more than physical cores does not make sense. In my experience, half of the number of cores is the ideal option for one thread node
 
@@ -80,7 +80,7 @@ You can determine how to convert a given specific type
 3802 - code JSONb
 
 ```sql
-select typname, typelem from pg_type; //return all code
+select typname, typelem, typarray from pg_type; --return all code pg_type
 ```
 
 ```js
