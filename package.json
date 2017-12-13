@@ -1,6 +1,6 @@
 {
   "name": "pg.io",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "Speed driver node js for postgres (100 000 request/sec and more), LISTEN, NOTIFY, pool, castom Types, minimal dependencies",
   "main": "index.js",
   "scripts": {
