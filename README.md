@@ -76,7 +76,7 @@ DB.once('Users.update', (id, name) => {
 # Custom types
 You can determine how to convert a given specific type
 
-114 - code postgres JSON
+114 - code JSON
 3802 - code JSONb
 
 ```sql
@@ -84,11 +84,11 @@ select typname, typelem, typarray from pg_type; --return all code pg_type
 ```
 
 ```js
-DB.addType(114, JSON.parse);
+DB.setType(114, JSON.parse);
 let res = await DB.query('SELECT $1::JSON', JSON.stringify({name: 'maksim snytko'}));
 console.log(res);//[ { json: { name: 'maksim snytko' } } ]
 
-DB.addType(1184, str => {
+DB.setType(1184, str => {
     return 'Minsk UNIX '+Date.parse(str);
 });
 let res = await DB.query('SELECT now()');
