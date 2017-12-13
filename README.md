@@ -1,5 +1,5 @@
 # pg.io
-Speed driver node js for postgres (100 000 request/sec and more), LISTEN, NOTIFY, pool, castom Types, minimal dependencies
+Speed driver node js for PostgreSQL (100 000 request/sec and more), LISTEN, NOTIFY, pool, castom Types, minimal dependencies
 
 # Install
 
@@ -20,7 +20,7 @@ const DB = new PG({
     max: 6
 });
 ```
-`rowFormat: 'JSON'` if you want the result of a string in JSON  `res = [{...},{...}...])`
+`rowFormat: 'JSON'` if you want the result of a string in JSON  `res = [{...},{...}...]`
 
 `max: 6` The number of simultaneous connections to the database, balancing is based on the Round Robin principle. Specifying more than physical cores does not make sense. In my experience, half of the number of cores is the ideal option for one thread node
 
@@ -64,7 +64,7 @@ DB.emit('Users.update', 1, 'user');
 
 These methods can be run on different machines or in different threads
 
-`DB.emit` this is the same as `SELECT pg_notify('Users.update', '[1, 'user']');` or `NOTIFY Users.update, '[1, 'user']'`
+`DB.emit` this is the same as `SELECT pg_notify("Users.update", '[1, 'user']');` or `NOTIFY "Users.update", '[1, 'user']'`
 
 will only work once
 ```js
@@ -73,13 +73,14 @@ DB.once('Users.update', (id, name) => {
 });
 ```
 
-# Castom types
+# Custom types
+You can determine how to convert a given specific type
 
 114 - code postgres JSON
 3802 - code JSONb
 
 ```sql
-select typname, typelem from pg_type; //return all code
+select typname, typelem, typarray from pg_type; --return all code pg_type
 ```
 
 ```js
