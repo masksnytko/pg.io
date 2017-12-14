@@ -64,7 +64,7 @@ DB.emit('Users.update', 1, 'user');
 
 These methods can be run on different machines or in different threads
 
-`DB.emit` this is the same as `SELECT pg_notify("Users.update", '[1, 'user']');` or `NOTIFY "Users.update", '[1, 'user']'`
+`DB.emit` this is the same as `SELECT pg_notify("Users.update", '[1, "user"]');` or `NOTIFY "Users.update", '[1, "user"]'`
 
 will only work once
 ```js
