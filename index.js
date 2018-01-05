@@ -1,15 +1,15 @@
 'use strict';
 
-const net = require('net');
-const crypto = require('crypto');
-const Events = require('events.io');
+const {Stream} = require('net');
+const Crypto = require('crypto');
 const Queue = require('queue.o');
+const Events = require('events.io');
 const PostgresType = require('./pg-type');
 
 const SFCC = String.fromCharCode;
-const md5 = s => crypto.createHash('md5').update(s, 'utf-8').digest('hex');
-const Int16BE = n => SFCC(n>>>8&0xFF, n>>>0&0xFF);
-const Int32BE = n => SFCC(n>>>24&0xFF, n>>>16&0xFF, n>>>8&0xFF, n>>>0&0xFF);
+const md5 = s => Crypto.createHash('md5').update(s, 'utf-8').digest('hex');
+const int16BE = n => SFCC(n>>>8&0xFF, n>>>0&0xFF);
+const int32BE = n => SFCC(n>>>24&0xFF, n>>>16&0xFF, n>>>8&0xFF, n>>>0&0xFF);
 const postgresMd5PasswordHash = (user, password, salt) => 'md5'+md5(Buffer.concat([Buffer.from(md5(password+user)), salt]));
 
 const Z = SFCC(0);
@@ -17,18 +17,17 @@ const ZZ = SFCC(0, 0);
 const ZZZ = SFCC(0, 0, 0);
 const ZZZZ = SFCC(0, 0, 0, 0);
 const Ignore = Symbol('Ignore');
-const DEHSComande = 'D'+Int32BE(6)+'P'+Z+'E'+Int32BE(9)+Z+Int32BE(0)+'H'+Int32BE(4)+'S'+Int32BE(4);
-const PG_TYPE = new PostgresType;
+const DEHSComande = 'D'+int32BE(6)+'P'+Z+'E'+int32BE(9)+Z+int32BE(0)+'H'+int32BE(4)+'S'+int32BE(4);
 
-class Connection {
+class Connection extends Stream {
     constructor(options) {
+        super();
         this._rowToJSON = options.rowFormat === 'JSON';
         this._database = options.database || 'postgres';
         this._host = options.host || 'localhost';
         this._user = options.user || 'postgres';
         this._port = options.port || 5432;
         this._password = options.password;
-        this._socket = new net.Stream;
         this._buf = Buffer.alloc(0);
         this._q = new Queue;
         this._fields = [];
@@ -37,12 +36,7 @@ class Connection {
     }
     connect(cb) {
         this.connectResponse = cb;
-        this._socket.connect(this._port, this._host);
-        this._socket.on('connect', () => {
-            let str = 'user'+Z+this._user+Z+'database'+Z+this._database+Z+'client_encoding'+Z+"'utf-8'"+ZZ;
-            this._socket.write(Int32BE(str.length+8)+Int32BE(196608)+str);
-        });
-        this._socket.on('data', buf => {
+        this.on('data', buf => {
 
             if (this._buf.length === 0) {
                 this._buf = buf;
@@ -73,7 +67,12 @@ class Connection {
 
                 this._buf = this._buf.slice(this._len + 1);
             }
-        });  
+        });
+
+        super.connect(this._port, this._host, () => {
+            let str = 'user'+Z+this._user+Z+'database'+Z+this._database+Z+'client_encoding'+Z+"'utf-8'"+ZZ;
+            this.write(int32BE(str.length+8)+int32BE(196608)+str);
+        });
     }
     A() {
         let [type, v] = this._buf.utf8Slice(9, this._len).split(Z);
@@ -84,7 +83,7 @@ class Connection {
             try {
                 v = JSON.parse(v);
                 this.notificationResponse(type, ...v);
-            } catch (error) {
+            } catch (err) {
                 this.notificationResponse(type, v);
             }
         }
@@ -92,7 +91,7 @@ class Connection {
     R() {
         if (this._len === 12) {
             let str = postgresMd5PasswordHash(this._user, this._password, this._buf.slice(9));
-            this._socket.write('p'+Int32BE(str.length+4)+str);
+            this.write('p'+int32BE(str.length+4)+str);
         } else if (this._len === 8 && this._buf.readInt32LE(5) === 0) {
             this.connectResponse();
         }
@@ -102,8 +101,8 @@ class Connection {
         this.info[m[0]] = m[1];
     }
     K() {
-        this['PID'] = this._buf.readInt32LE(4);
-        this['PID_KEY'] = this._buf.readInt32LE(8);
+        this.info['PID'] = this._buf.readInt32LE(4);
+        this.info['PID_KEY'] = this._buf.readInt32LE(8);
     }
     C() {
         let cb = this._q.shift();
@@ -122,9 +121,9 @@ class Connection {
 
         let buf = this._buf;
         let n = buf.readInt16BE(5);
-        let index, offset = 7, name, typeId;
+        let index, name, i, offset = 7;
 
-        for (var i = 0; i < n; i++) {
+        for (i = 0; i < n; ++i) {
             index = offset;
             while (buf[index++] !== 0);
 
@@ -134,42 +133,44 @@ class Connection {
                 name = i;
             }
 
-            offset = index + 6;
-            this._fields[i] = [name, buf.readInt32BE(offset)];
-            offset += 12;
+            this._fields[i] = [name, this.postgresType[buf.readInt32BE(index + 6)]];
+            
+            offset = index + 18;
         }
     }
     D() {
+
         if (this._q.first === Ignore) {
             return;
         }
 
         let buf = this._buf;
         let n = buf.readInt16BE(5);
-        let offset = 7, len, res, F;
+        let len, row, name, f, i, offset = 7;
         
         if (this._rowToJSON === true) {
-            res = {};
+            row = {};
         } else {
-            res = new Array(n);
+            row = new Array(n);
         }
         
-        for (var i = 0; i < n; i++) {
+        for (i = 0; i < n; ++i) {
+            [name, f] = this._fields[i];
             len = buf.readInt32BE(offset);
             offset += 4;
+
             if (len === -1) {
-                res[this._fields[i][0]] = null;
+                row[name] = null;
             } else {
-                F = PG_TYPE[this._fields[i][1]];
-                if (F === undefined) {
-                    res[this._fields[i][0]] = buf.utf8Slice(offset, offset += len);
+                if (f === undefined) {
+                    row[name] = buf.utf8Slice(offset, offset += len);
                 } else {
-                    res[this._fields[i][0]] = F(buf.utf8Slice(offset, offset += len));
+                    row[name] = f(buf.utf8Slice(offset, offset += len));
                 }
             }
         }
 
-        this._res.push(res);
+        this._res.push(row);
     }
     E() {
         let cb = this._q.shift();
@@ -182,23 +183,19 @@ class Connection {
         this._q.push(arg.pop());
 
         if (arg.length === 0) {
-            this._socket.write('Q'+Int32BE(str.length + 5)+str+Z);
+            this.write('Q'+int32BE(str.length + 5)+str+Z);
         } else {
-            this._socket.write('P'+Int32BE(str.length + 8)+Z+str+ZZZ);
-
-            let len = arg.length;
-            let buf = ZZZZ + Int16BE(len);
-            let val, i;
-
+            this.write('P'+int32BE(str.length + 8)+Z+str+ZZZ);
+            
+            let val, i, len = arg.length;
+            str = ZZZZ + int16BE(len);
+            
             for (i = 0; i < len; i++) {
                 val = String(arg[i]);
-                buf += Int32BE(val.length);
-                buf += val;
+                str += int32BE(val.length) + val;
             }
 
-            buf += ZZ;
-
-            this._socket.write('B'+Int32BE(buf.length + 4)+buf+DEHSComande);
+            this.write('B'+int32BE(str.length + 6)+str+ZZ+DEHSComande);
         }
     }
 }
@@ -206,17 +203,19 @@ class Connection {
 class PoolConnection extends Events {
     constructor(options) {
         super();
+        this._postgresType = new PostgresType;
         this._max = options.max || 1;
         this._options = options;
         this._pool = [];
         this._rr = 0;
         this._q = [];
-        this._init();
+        this.connect();
     }
-    _init() {
+    connect() {
         for (var i = 0; i < this._max; i++) {
             let client = new Connection(this._options);
             client.notificationResponse = super.emit.bind(this);
+            client.postgresType = this._postgresType;
             client.connect(() => {
                 this._pool.push(client);
                 if (this._pool.length === this._max) {
@@ -294,7 +293,7 @@ class PoolConnection extends Events {
         }
     }
     setType(code, cb) {
-        PG_TYPE[code] = cb;
+        this._postgresType[code] = cb;
     }
 }
 

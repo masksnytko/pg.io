@@ -1,4 +1,5 @@
 'use strict';
+
 const parseBool = function(value) {
     return value === 'TRUE' ||
       value === 't' ||
@@ -62,18 +63,10 @@ const parseJsonArray = function(value) {
     return value;
 }
 
-let instance;
 class PostgresType extends Array {
     constructor() {
-        if (instance !== undefined) {
-            return instance;
-        } else {
-            super();
-            instance = this;
-        }
-        this._init();
-    }
-    _init() {
+        super(3907);
+
         this[21] = parseInt; // int2
         this[23] = parseInt; // int4
         this[26] = parseInt; // oid
@@ -129,7 +122,7 @@ class PostgresType extends Array {
         this[3907] = parseStringArray; // numrange[]
         this[2951] = parseStringArray; // uuid[]
         this[1183] = parseStringArray; // time[]
-        this[1270] = parseStringArray; // timetz[]        
+        this[1270] = parseStringArray; // timetz[]
     }
 }
 
