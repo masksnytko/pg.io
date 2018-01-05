@@ -52,7 +52,7 @@ DB.on('Users.update', (id, name) => {
 });
 ```
 
-`DB.on` returm promiss(this is necessary in case of waiting for the hanging of the device)
+`DB.on` return Promise (this is necessary in case of waiting for the hanging of the device)
 
 ```js
 await DB.on('Users.update', (id, name) => {
