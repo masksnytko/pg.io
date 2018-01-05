@@ -17,50 +17,50 @@ const ZZ = SFCC(0, 0);
 const ZZZ = SFCC(0, 0, 0);
 const ZZZZ = SFCC(0, 0, 0, 0);
 const Ignore = Symbol('Ignore');
-const DEHComande = 'D'+Int32BE(6)+'P'+Z+'E'+Int32BE(9)+Z+Int32BE(0)+'H'+Int32BE(4);
-const SyncComande = 'S'+Int32BE(4);
+const DEHSComande = 'D'+Int32BE(6)+'P'+Z+'E'+Int32BE(9)+Z+Int32BE(0)+'H'+Int32BE(4)+'S'+Int32BE(4);
 const PG_TYPE = new PostgresType;
 
 class Connection {
     constructor(options) {
-        this._user = options.user || 'postgres';
+        this._rowToJSON = options.rowFormat === 'JSON';
         this._database = options.database || 'postgres';
         this._host = options.host || 'localhost';
+        this._user = options.user || 'postgres';
         this._port = options.port || 5432;
         this._password = options.password;
-        this._rowToJSON = options.rowFormat === 'JSON';
         this._socket = new net.Stream;
+        this._buf = Buffer.alloc(0);
         this._q = new Queue;
         this._fields = [];
         this._res = [];
         this.info = {};
-        this._buf;
     }
-    connect() {
+    connect(cb) {
+        this.connectResponse = cb;
         this._socket.connect(this._port, this._host);
         this._socket.on('connect', () => {
             let str = 'user'+Z+this._user+Z+'database'+Z+this._database+Z+'client_encoding'+Z+"'utf-8'"+ZZ;
             this._socket.write(Int32BE(str.length+8)+Int32BE(196608)+str);
         });
-
-        let oldBuf = null, len;
         this._socket.on('data', buf => {
 
-            if (oldBuf !== null) {
-                buf = Buffer.concat([oldBuf, buf]);
+            if (this._buf.length === 0) {
+                this._buf = buf;
+            } else {
+                this._buf = Buffer.concat([this._buf, buf]);
             }
 
-            while (buf.length > 4) {
-                len = buf.readInt32BE(1);
+            while (this._buf.length > 4) {
 
-                if (buf.length <= len) {
+                this._len = this._buf.readInt32BE(1);
+
+                if (this._len >= this._buf.length) {
                     break;
                 }
-
-                this._len = len;
-                this._buf = buf;
                 
-                switch (buf[0]) {
+                //console.log(this._buf[0], SFCC(this._buf[0]))
+
+                switch (this._buf[0]) {
                     case 65: this.A(); break;
                     case 67: this.C(); break;
                     case 68: this.D(); break;
@@ -69,16 +69,9 @@ class Connection {
                     case 82: this.R(); break;
                     case 83: this.S(); break;
                     case 84: this.T(); break;
-                    //default: console.log(buf[0], SFCC(buf[0]));
                 }
 
-                buf = buf.slice(len + 1);
-            }
-
-            if (buf.length === 0) {
-                oldBuf = null;
-            } else {
-                oldBuf = buf;
+                this._buf = this._buf.slice(this._len + 1);
             }
         });  
     }
@@ -179,7 +172,6 @@ class Connection {
         this._res.push(res);
     }
     E() {
-        this._socket.write(SyncComande);
         let cb = this._q.shift();
         if (typeof cb === 'function') {
             cb(this._buf.utf8Slice(6, this._len));
@@ -206,7 +198,7 @@ class Connection {
 
             buf += ZZ;
 
-            this._socket.write('B'+Int32BE(buf.length+4)+buf+DEHComande);
+            this._socket.write('B'+Int32BE(buf.length + 4)+buf+DEHSComande);
         }
     }
 }
@@ -214,80 +206,73 @@ class Connection {
 class PoolConnection extends Events {
     constructor(options) {
         super();
-        this._queue = [];
+        this._max = options.max || 1;
+        this._options = options;
         this._pool = [];
         this._rr = 0;
-        this._countPool = options.max || 1;
-        this._options = options;
-        this._connect = false;
+        this._q = [];
         this._init();
     }
     _init() {
-        let k = this._countPool;
-        for (var i = 0; i < this._countPool; i++) {
-            
+        for (var i = 0; i < this._max; i++) {
             let client = new Connection(this._options);
-            this._pool.push(client);
-
-            client.connect();
-            client.connectResponse = () => {
-                if (--k === 0) {
-                    this._connect = true;
-                    this._cleanQueue();
-                }
-            }
             client.notificationResponse = super.emit.bind(this);
+            client.connect(() => {
+                this._pool.push(client);
+                if (this._pool.length === this._max) {
+                    this._cleanQueue();
+                    this._redefineQuery();
+                }
+            });
         }
     }
     _cleanQueue() {
-        for (var i = 0; i < this._queue.length; i++) {
-            this.query.apply(this, this._queue[i]);
+        for (var i = 0; i < this._q.length; i++) {
+            this._query.apply(this, this._q[i]);
         }
-        this._q = [];
+        delete this._q;
+    }
+    _redefineQuery() {
+        this.query = this._query;
     }
     query(...arg) {
         let last = arg[arg.length - 1];
-        let client;
 
-        if (this._connect === true) {
-            
-            if (this._countPool === 1) {
-                client = this._pool[0];
-            } else {
-                this._rr++;
-                this._rr %= this._countPool;
-                client = this._pool[this._rr];
-            }
-            
-            if (typeof last === 'function' || last === Ignore) {
-                client.query.apply(client, arg);
-            } else {
-                return new Promise((resolve, reject) => {
-                    arg.push((err, res) => {
-                        if (err === null) {
-                            resolve(res);
-                        } else {
-                            reject(err);
-                        }
-                    });
-                    client.query.apply(client, arg);
-                });
-            }
+        if (typeof last === 'function' || last === Ignore) {
+            this._q.push(arg);
         } else {
-            if (typeof last === 'function' || last === Ignore) {
-                this._queue.push(arg);
-            } else {
-                return new Promise((resolve, reject) => {
-                    arg.push((err, res) => {
-                        if (err === null) {
-                            resolve(res);
-                        } else {
-                            reject(err);
-                        }
-                    });
-                    this._queue.push(arg);
+            return new Promise((resolve, reject) => {
+                arg.push((err, res) => {
+                    if (err === null) {
+                        resolve(res);
+                    } else {
+                        reject(err);
+                    }
                 });
-            }
+                this._q.push(arg);
+            });
+        }
+    }
+    _query(...arg) {
+        let last = arg[arg.length - 1];
+        let client = this._pool[this._rr];
+        
+        this._rr++;
+        this._rr %= this._max;
+        
+        if (typeof last === 'function' || last === Ignore) {
+            client.query.apply(client, arg);
+        } else {
+            return new Promise((resolve, reject) => {
+                arg.push((err, res) => {
+                    if (err === null) {
+                        resolve(res);
+                    } else {
+                        reject(err);
+                    }
+                });
+                client.query.apply(client, arg);
+            });
         }
     }
     on(type, cb) {
