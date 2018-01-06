@@ -26,6 +26,6 @@
   "homepage": "https://github.com/masksnytko/pg.io#readme",
   "dependencies": {
     "events.io": "^2.0.3",
-    "queue.o": "^1.0.7"
+    "queue.o": "^1.0.8"
   }
 }
