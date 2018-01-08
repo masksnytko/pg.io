@@ -107,6 +107,7 @@ class Connection extends Stream {
     C() {
         let cb = this._q.shift();
         if (typeof cb === 'function') {
+            this._res.rowCount = +this._buf.utf8Slice(5, this._len).split(' ').pop();
             cb(null, this._res);
             if (this._res.length !== 0) {
                 this._res = [];
