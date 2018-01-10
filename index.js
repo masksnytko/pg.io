@@ -221,58 +221,54 @@ class PoolConnection extends Events {
                 this._pool.push(client);
                 if (this._pool.length === this._max) {
                     this._cleanQueue();
-                    this._redefineQuery();
                 }
             });
         }
     }
     _cleanQueue() {
+        this.ready = true;
         for (var i = 0; i < this._q.length; i++) {
-            this._query.apply(this, this._q[i]);
+            this.query.apply(this, this._q[i]);
         }
         delete this._q;
     }
-    _redefineQuery() {
-        this.query = this._query;
-    }
     query(...arg) {
         let last = arg[arg.length - 1];
-
-        if (typeof last === 'function' || last === Ignore) {
-            this._q.push(arg);
-        } else {
-            return new Promise((resolve, reject) => {
-                arg.push((err, res) => {
-                    if (err === null) {
-                        resolve(res);
-                    } else {
-                        reject(err);
-                    }
-                });
-                this._q.push(arg);
-            });
-        }
-    }
-    _query(...arg) {
-        let last = arg[arg.length - 1];
-        let client = this._pool[this._rr];
         
-        this._rr++;
-        this._rr %= this._max;
-        
-        if (typeof last === 'function' || last === Ignore) {
-            client.query.apply(client, arg);
-        } else {
-            return new Promise((resolve, reject) => {
-                arg.push((err, res) => {
-                    if (err === null) {
-                        resolve(res);
-                    } else {
-                        reject(err);
-                    }
-                });
+        if (this.ready === true) {
+            let client = this._pool[this._rr];
+            this._rr++;
+            this._rr %= this._max;
+            
+            if (typeof last === 'function' || last === Ignore) {
                 client.query.apply(client, arg);
-            });
+            } else {
+                return new Promise((resolve, reject) => {
+                    arg.push((err, res) => {
+                        if (err === null) {
+                            resolve(res);
+                        } else {
+                            reject(err);
+                        }
+                    });
+                    client.query.apply(client, arg);
+                });
+            }
+        } else {
+            if (typeof last === 'function' || last === Ignore) {
+                this._q.push(arg);
+            } else {
+                return new Promise((resolve, reject) => {
+                    arg.push((err, res) => {
+                        if (err === null) {
+                            resolve(res);
+                        } else {
+                            reject(err);
+                        }
+                    });
+                    this._q.push(arg);
+                });
+            }
         }
     }
     on(type, cb) {
