@@ -41,8 +41,8 @@ class PoolConnection extends Events {
     }
     on(type, cb) {
         super.on(type, cb);
-        
-        if (super.listenerCount(type) === 0) {
+
+        if (super.listenerCount(type) === 1) {
             return this.query(`LISTEN "${type}"`, Ignore);
         }
     }
@@ -52,7 +52,7 @@ class PoolConnection extends Events {
             cb(...arg);
         });
 
-        if (super.listenerCount(type) === 0) {
+        if (super.listenerCount(type) === 1) {
             return this.query(`LISTEN "${type}"`, Ignore);
         }
     }
