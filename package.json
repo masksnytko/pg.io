@@ -16,8 +16,9 @@
     "query",
     "speed",
     "LISTEN",
+    "NOTIFY",
     "events",
-    "NOTIFY"
+    "ES6"
   ],
   "author": "",
   "license": "ISC",
