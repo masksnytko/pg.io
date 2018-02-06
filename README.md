@@ -94,3 +94,36 @@ DB.setType(1184, str => {
 let res = await DB.query('SELECT now()');
 console.log(res);//[{ now: 'Minsk UNIX 1513101706805'}]
 ```
+
+# Benchmark
+
+PostgreSQL = 10
+
+CPU = i7-6700HQ
+
+OS = Windows 10
+
+Node = 9.50
+
+```js
+const PG = require('pg.io');
+
+const DB = new PG({
+    user: 'postgres',
+    password: 'password',
+    database: 'postgres',
+    max: 6
+});
+
+var k = 0;
+console.time('test');
+for (var i = 0; i < 1000000; i++) {
+    DB.query('SELECT 1', () => {
+        if (++k === 1000000) {
+            console.timeEnd('test');
+        }
+    });
+}
+```
+
+test: 7618.609ms ~ 130 000 i/o sec
