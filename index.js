@@ -1,8 +1,8 @@
 'use strict';
 
-const Events = require('events.io');
-const PostgresType = require('./lib/pg-type');
 const Connection = require('./lib/connection');
+const PostgresType = require('./lib/pg-type');
+const Events = require('events.io');
 const Ignore = Symbol('Ignore');
 
 class PoolConnection extends Events {
