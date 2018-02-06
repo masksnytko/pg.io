@@ -98,8 +98,11 @@ console.log(res);//[{ now: 'Minsk UNIX 1513101706805'}]
 # Benchmark
 
 PostgreSQL = 10
+
 CPU = i7-6700HQ
+
 OS = Windows 10
+
 Node = 9.50
 
 ```js
