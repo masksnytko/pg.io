@@ -1,9 +1,8 @@
-'use strict';
+"use strict";
 
 const Connection = require('./lib/connection');
 const PostgresType = require('./lib/pg-type');
-const Events = require('events.io');
-const Ignore = Symbol('Ignore');
+const Events = require('events');
 
 class PoolConnection extends Events {
     constructor(options) {
@@ -13,54 +12,39 @@ class PoolConnection extends Events {
         this.pgType = new PostgresType;
         this.pool = [];
 
-        let i, notifiy = super.emit.bind(this);
-        for (i = 0; i < this.max; ++i) {
+        let notifiy = super.emit.bind(this);
+        for (var i = 0; i < this.max; ++i) {
             this.pool[i] = new Connection(options, notifiy, this.pgType);
         }
     }
-    query(text, ...arg) {
-        let last = arg[arg.length - 1];
-        let client = this.pool[this._rr];
-
-        if (typeof last === 'function' || last === Ignore) {
-            client.query(text, arg, arg.pop());
-        } else {
-            return new Promise((resolve, reject) => {
-                client.query(text, arg, (err, res) => {
-                    if (err === null) {
-                        resolve(res);
-                    } else {
-                        reject(err);
-                    }
-                });
-            });
-        }
-
+    get client() {
         this._rr++;
         this._rr %= this.max;
+        return this.pool[this._rr];
+    }
+    query(...arg) {
+        return this.client.query(...arg);
     }
     on(type, cb) {
         super.on(type, cb);
-
         if (super.listenerCount(type) === 1) {
-            return this.query(`LISTEN "${type}"`, Ignore);
+            this.addListenerPG(type);
         }
     }
-    once(type, cb) {
-        super.once(type, (...arg) => {
-            this.query(`UNLISTEN "${type}"`, Ignore);
-            cb(...arg);
+    addListenerPG(type) {
+        let client = this.client;
+        client.query(`LISTEN "${type}"`);
+        client.once('error', () => {
+            client.once('close', () => {
+                this.addListenerPG(type);
+            });
         });
-
-        if (super.listenerCount(type) === 1) {
-            return this.query(`LISTEN "${type}"`, Ignore);
-        }
     }
     emit(type, ...arg) {
         if (arg.length === 0) {
-            this.query(`NOTIFY "${type}"`, Ignore);
+            return this.query(`NOTIFY "${type}"`);
         } else {
-            this.query(`NOTIFY "${type}", '${JSON.stringify(arg)}'`, Ignore);
+            return this.query(`NOTIFY "${type}", '${JSON.stringify(arg)}'`);
         }
     }
     setType(code, cb) {
