@@ -5,10 +5,11 @@ const Events = require('events');
 class PoolConnection extends Events {
     constructor(options) {
         super();
+
         this._rr = 0;
+        this.pool = [];
         this.max = options.max || 1;
         this.pgType = new PostgresType;
-        this.pool = [];
 
         let notifiy = super.emit.bind(this);
         for (var i = 0; i < this.max; ++i) {
