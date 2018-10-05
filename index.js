@@ -1,5 +1,3 @@
-"use strict";
-
 const Connection = require('./lib/connection');
 const PostgresType = require('./lib/pg-type');
 const Events = require('events');
@@ -28,17 +26,14 @@ class PoolConnection extends Events {
     on(type, cb) {
         super.on(type, cb);
         if (super.listenerCount(type) === 1) {
-            this.addListenerPG(type);
-        }
-    }
-    addListenerPG(type) {
-        let client = this.client;
-        client.query(`LISTEN "${type}"`);
-        client.once('error', () => {
-            client.once('close', () => {
-                this.addListenerPG(type);
+            let client = this.client;
+            if (client.ready) {
+                client.query(`LISTEN "${type}"`);
+            }
+            client.on('ready', () => {
+                client.query(`LISTEN "${type}"`);
             });
-        });
+        }
     }
     emit(type, ...arg) {
         if (arg.length === 0) {
