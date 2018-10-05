@@ -22,8 +22,7 @@ const DB = new PG({
 ```
 `rowFormat: 'JSON'` if you want the result of a string in JSON  `res = [{...},{...}...]`
 
-`max: 6` The number of simultaneous connections to the database, balancing is based on the Round Robin principle. Specifying more than physical cores does not make sense. In my experience, half of the number of cores is the ideal option for one thread node
-
+`max: 6` The number of simultaneous connections to the database, balancing is based on the Round Robin principle.
 # Query
 
 ```js
@@ -45,17 +44,8 @@ let res = await DB.query('SELECT $1::INT, $2::TEXT', 1, 'param');
 ```
 
 # LISTEN, NOTIFY
-
 ```js
 DB.on('Users.update', (id, name) => {
-  console.log(id, name);
-});
-```
-
-`DB.on` return Promise (this is necessary in case of waiting for the hanging of the device)
-
-```js
-await DB.on('Users.update', (id, name) => {
   console.log(id, name); //1, 'user';
 });
 
@@ -66,12 +56,6 @@ These methods can be run on different machines or in different threads
 
 `DB.emit` this is the same as `SELECT pg_notify("Users.update", '[1, "user"]');` or `NOTIFY "Users.update", '[1, "user"]'`
 
-will only work once
-```js
-DB.once('Users.update', (id, name) => {
-  console.log(id, name);
-});
-```
 
 # Custom types
 You can determine how to convert a given specific type
