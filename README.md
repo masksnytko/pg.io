@@ -12,7 +12,7 @@ npm i pg.io
 ```js
 const PG = require('pg.io');
 
-const DB = new PG({
+const db = new PG({
     user: 'username',
     password: 'password',
     database: 'database',
@@ -26,35 +26,35 @@ const DB = new PG({
 # Query
 
 ```js
-DB.query('SELECT 1', (err, res) => {
+db.query('SELECT 1', (err, res) => {
   console.log(err, res);
 });
 
-let res = await DB.query('SELECT 1');
+let res = await db.query('SELECT 1');
 
-DB.query('SELECT $1', 1, (err, res) => {
+db.query('SELECT $1', 1, (err, res) => {
   console.log(err, res);
 });
 
-DB.query('SELECT $1::INT, $2::TEXT', 1, 'param', (err, res) => {
+db.query('SELECT $1::INT, $2::TEXT', 1, 'param', (err, res) => {
   console.log(err, res);
 });
 
-let res = await DB.query('SELECT $1::INT, $2::TEXT', 1, 'param');
+let res = await db.query('SELECT $1::INT, $2::TEXT', 1, 'param');
 ```
 
 # LISTEN, NOTIFY
 ```js
-DB.on('Users.update', (id, name) => {
+db.on('Users.update', (id, name) => {
   console.log(id, name); //1, 'user';
 });
 
-DB.emit('Users.update', 1, 'user');
+db.emit('Users.update', 1, 'user');
 ```
 
 These methods can be run on different machines or in different threads
 
-`DB.emit` this is the same as `SELECT pg_notify("Users.update", '[1, "user"]');` or `NOTIFY "Users.update", '[1, "user"]'`
+`db.emit` this is the same as `SELECT pg_notify("Users.update", '[1, "user"]');` or `NOTIFY "Users.update", '[1, "user"]'`
 
 
 # Custom types
@@ -68,14 +68,14 @@ select typname, typelem, typarray from pg_type; --return all code pg_type
 ```
 
 ```js
-DB.setType(114, JSON.parse);
-let res = await DB.query('SELECT $1::JSON', JSON.stringify({name: 'maksim snytko'}));
+db.setType(114, JSON.parse);
+let res = await db.query('SELECT $1::JSON', JSON.stringify({name: 'maksim snytko'}));
 console.log(res);//[ { json: { name: 'maksim snytko' } } ]
 
-DB.setType(1184, str => {
+db.setType(1184, str => {
     return 'Minsk UNIX '+Date.parse(str);
 });
-let res = await DB.query('SELECT now()');
+let res = await db.query('SELECT now()');
 console.log(res);//[{ now: 'Minsk UNIX 1513101706805'}]
 ```
 
@@ -92,7 +92,7 @@ Node = 9.50
 ```js
 const PG = require('pg.io');
 
-const DB = new PG({
+const db = new PG({
     user: 'postgres',
     password: 'password',
     database: 'postgres',
@@ -102,7 +102,7 @@ const DB = new PG({
 var k = 0;
 console.time('test');
 for (var i = 0; i < 1000000; i++) {
-    DB.query('SELECT 1', () => {
+    db.query('SELECT 1', () => {
         if (++k === 1000000) {
             console.timeEnd('test');
         }
