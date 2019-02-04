@@ -1,5 +1,6 @@
 const Connection = require('./lib/connection');
 const PostgresType = require('./lib/pg-type');
+const Module = require('./lib/module');
 const Events = require('events');
 
 class PoolConnection extends Events {
@@ -8,6 +9,7 @@ class PoolConnection extends Events {
 
         this._rr = 0;
         this.pool = [];
+        this.modules = {};
         this.max = options.max || 1;
         this.pgType = new PostgresType;
 
@@ -45,6 +47,9 @@ class PoolConnection extends Events {
     }
     setType(code, cb) {
         this.pgType[code] = cb;
+    }
+    require(path = './') {
+        return new Module(this, path);
     }
 }
 

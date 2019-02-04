@@ -1,7 +1,7 @@
 {
   "name": "pg.io",
-  "version": "1.1.6",
-  "description": "Speed driver node js for postgres (100 000 request/sec and more), LISTEN, NOTIFY, pool, castom Types, minimal dependencies",
+  "version": "1.1.7",
+  "description": "Speed driver node js for postgres (100 000 request/sec and more), LISTEN, NOTIFY, pool, castom Types, minimal dependencies, sql file",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
