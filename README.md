@@ -1,5 +1,5 @@
 # pg.io
-Speed driver node js for PostgreSQL (100 000 request/sec and more), LISTEN, NOTIFY, pool, castom Types, minimal dependencies
+fast driver node js for PostgreSQL (100 000 request/sec and more), LISTEN, NOTIFY, pool balancing, custom Types
 
 # Install
 
